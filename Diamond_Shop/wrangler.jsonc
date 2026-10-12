@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "diamond-shop",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-12",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "diamond-shop-db",
+      "database_id": "REPLACE_WITH_DATABASE_ID"
+    }
+  ]
+}
