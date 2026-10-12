@@ -2,28 +2,36 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const headers = {
-      "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Cache-Control": "no-store",
-    };
 
     const json = (data, status = 200) =>
-      new Response(JSON.stringify(data), { status, headers });
+      Response.json(data, {
+        status,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Cache-Control": "no-store",
+        },
+      });
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers });
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
     }
 
     if (url.pathname === "/api/health" && request.method === "GET") {
       return json({ ok: true, service: "Diamond Shop API" });
     }
 
-    // Endpoints reserved for the Discord bot
     if (url.pathname.startsWith("/api/bot/")) {
       const auth = request.headers.get("Authorization") || "";
+
       if (!env.BOT_KEY || auth !== `Bearer ${env.BOT_KEY}`) {
         return json({ ok: false, error: "Unauthorized" }, 401);
       }
@@ -32,7 +40,10 @@ export default {
         return json({ ok: false, error: "Database not configured" }, 500);
       }
 
-      if (url.pathname === "/api/bot/orders" && request.method === "GET") {
+      if (
+        url.pathname === "/api/bot/orders" &&
+        request.method === "GET"
+      ) {
         try {
           const result = await env.DB.prepare(
             `SELECT id, discord_user_id, item_name, quantity,
@@ -43,14 +54,21 @@ export default {
           ).all();
 
           return json(result.results || []);
-        } catch (error) {
-          return json({ ok: false, error: "Database query failed" }, 500);
+        } catch {
+          return json(
+            { ok: false, error: "Database query failed" },
+            500
+          );
         }
       }
 
-      const match = url.pathname.match(/^\/api\/bot\/orders\/([^/]+)\/status$/);
+      const match = url.pathname.match(
+        /^\/api\/bot\/orders\/([^/]+)\/status$/
+      );
+
       if (match && request.method === "POST") {
         let body;
+
         try {
           body = await request.json();
         } catch {
@@ -72,21 +90,30 @@ export default {
         try {
           const result = await env.DB.prepare(
             "UPDATE orders SET status = ? WHERE id = ?"
-          ).bind(body.status, decodeURIComponent(match[1])).run();
+          )
+            .bind(body.status, decodeURIComponent(match[1]))
+            .run();
 
           if (!result.meta?.changes) {
             return json({ ok: false, error: "Order not found" }, 404);
           }
 
           return json({ ok: true, status: body.status });
-        } catch (error) {
-          return json({ ok: false, error: "Database update failed" }, 500);
+        } catch {
+          return json(
+            { ok: false, error: "Database update failed" },
+            500
+          );
         }
       }
 
       return json({ ok: false, error: "Route not found" }, 404);
     }
 
-    return json({ ok: false, error: "Route not found" }, 404);
+    if (env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+
+    return json({ ok: false, error: "Assets not configured" }, 500);
   },
 };
