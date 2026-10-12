@@ -3,26 +3,18 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    const headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Cache-Control": "no-store",
+    };
+
     const json = (data, status = 200) =>
-      Response.json(data, {
-        status,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          "Cache-Control": "no-store",
-        },
-      });
+      Response.json(data, { status, headers });
 
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
-      });
+      return new Response(null, { status: 204, headers });
     }
 
     if (url.pathname === "/api/health" && request.method === "GET") {
@@ -32,12 +24,26 @@ export default {
     if (url.pathname.startsWith("/api/bot/")) {
       const auth = request.headers.get("Authorization") || "";
 
-      if (!env.BOT_KEY || auth !== `Bearer ${env.BOT_KEY}`) {
-        return json({ ok: false, error: "Unauthorized" }, 401);
+      if (!env.BOT_KEY) {
+        return json({
+          ok: false,
+          error: "BOT_KEY missing in Worker",
+        }, 500);
+      }
+
+      if (auth !== `Bearer ${env.BOT_KEY}`) {
+        return json({
+          ok: false,
+          error: "Authorization mismatch",
+          hasAuthorization: auth.startsWith("Bearer "),
+        }, 401);
       }
 
       if (!env.DB) {
-        return json({ ok: false, error: "Database not configured" }, 500);
+        return json({
+          ok: false,
+          error: "Database not configured",
+        }, 500);
       }
 
       if (
@@ -55,10 +61,10 @@ export default {
 
           return json(result.results || []);
         } catch {
-          return json(
-            { ok: false, error: "Database query failed" },
-            500
-          );
+          return json({
+            ok: false,
+            error: "Database query failed",
+          }, 500);
         }
       }
 
@@ -100,10 +106,10 @@ export default {
 
           return json({ ok: true, status: body.status });
         } catch {
-          return json(
-            { ok: false, error: "Database update failed" },
-            500
-          );
+          return json({
+            ok: false,
+            error: "Database update failed",
+          }, 500);
         }
       }
 
