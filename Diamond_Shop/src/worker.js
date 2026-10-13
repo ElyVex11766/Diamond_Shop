@@ -53,8 +53,10 @@ export default {
             expires_at TEXT NOT NULL
           )
         `).run();
-      } catch {
-        return json({ ok: false, error: "Payment table setup failed" }, 500);
+     } catch (error) {
+  console.error("GET /api/bot/orders failed:", error);
+  return json({ ok: false, error: "Database query failed" }, 500);
+}
       }
 
       // ساخت سفارش و لینک اختصاصی برای هر تیکت
