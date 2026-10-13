@@ -254,8 +254,8 @@ export default {
         `)
           .bind(tokenHash)
           .first();
-
-        if (!order) {
+        {
+        if (!order) 
           return json({ ok: false, error: "Link not found" }, 404);
         }
 
