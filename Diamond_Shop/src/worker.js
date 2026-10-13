@@ -1,3 +1,4 @@
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -20,7 +21,6 @@ export default {
       return json({ ok: true, service: "Diamond Shop API" });
     }
 
-    // APIهای مخصوص بات دیسکورد
     if (url.pathname.startsWith("/api/bot/")) {
       const auth = request.headers.get("Authorization") || "";
 
@@ -36,7 +36,6 @@ export default {
         return json({ ok: false, error: "Database not configured" }, 500);
       }
 
-      // جدول جداگانه برای لینک‌های پرداخت اختصاصی
       try {
         await env.DB.prepare(`
           CREATE TABLE IF NOT EXISTS payment_links (
@@ -53,17 +52,12 @@ export default {
             expires_at TEXT NOT NULL
           )
         `).run();
-     } catch (error) {
-  console.error("GET /api/bot/orders failed:", error);
-  return json({ ok: false, error: "Database query failed" }, 500);
-}
+      } catch (error) {
+        console.error("Payment table setup failed:", error);
+        return json({ ok: false, error: "Payment table setup failed" }, 500);
       }
 
-      // ساخت سفارش و لینک اختصاصی برای هر تیکت
-      if (
-        url.pathname === "/api/bot/payment-links" &&
-        request.method === "POST"
-      ) {
+      if (url.pathname === "/api/bot/payment-links" && request.method === "POST") {
         let body;
 
         try {
@@ -79,6 +73,7 @@ export default {
           item_name,
           quantity,
           unit_price_toman,
+          amount_toman,
           expires_at,
         } = body;
 
@@ -91,6 +86,8 @@ export default {
           quantity < 1 ||
           !Number.isSafeInteger(unit_price_toman) ||
           unit_price_toman < 0 ||
+          (amount_toman !== undefined &&
+            (!Number.isSafeInteger(amount_toman) || amount_toman < 0)) ||
           !expires_at ||
           !Number.isFinite(Date.parse(expires_at)) ||
           Date.parse(expires_at) <= Date.now()
@@ -98,13 +95,14 @@ export default {
           return json({ ok: false, error: "Invalid order data" }, 400);
         }
 
-        const amount = quantity * unit_price_toman;
+        const amount = amount_toman === undefined
+          ? quantity * unit_price_toman
+          : amount_toman;
 
         if (!Number.isSafeInteger(amount)) {
           return json({ ok: false, error: "Invalid total amount" }, 400);
         }
 
-        // لینک غیرقابل حدس؛ فقط هش توکن در دیتابیس ذخیره می‌شود
         const bytes = crypto.getRandomValues(new Uint8Array(32));
         const token = Array.from(bytes)
           .map((b) => b.toString(16).padStart(2, "0"))
@@ -147,7 +145,8 @@ export default {
             payment_url: `${url.origin}/pay/${token}`,
             expires_at: new Date(expires_at).toISOString(),
           }, 201);
-        } catch {
+        } catch (error) {
+          console.error("Could not create payment link:", error);
           return json({
             ok: false,
             error: "Could not create payment link. Check whether this order ID already exists.",
@@ -155,11 +154,7 @@ export default {
         }
       }
 
-      // بررسی و تغییر وضعیت سفارش از طریق بات
-      if (
-        url.pathname === "/api/bot/orders" &&
-        request.method === "GET"
-      ) {
+      if (url.pathname === "/api/bot/orders" && request.method === "GET") {
         try {
           const result = await env.DB.prepare(`
             SELECT id, discord_user_id, item_name, quantity,
@@ -170,14 +165,13 @@ export default {
           `).all();
 
           return json(result.results || []);
-        } catch {
+        } catch (error) {
+          console.error("GET /api/bot/orders failed:", error);
           return json({ ok: false, error: "Database query failed" }, 500);
         }
       }
 
-      const match = url.pathname.match(
-        /^\/api\/bot\/orders\/([^/]+)\/status$/
-      );
+      const match = url.pathname.match(/^\/api\/bot\/orders\/([^/]+)\/status$/);
 
       if (match && request.method === "POST") {
         let body;
@@ -203,17 +197,15 @@ export default {
         try {
           const result = await env.DB.prepare(
             "UPDATE orders SET status = ? WHERE id = ?"
-          ).bind(
-            body.status,
-            decodeURIComponent(match[1])
-          ).run();
+          ).bind(body.status, decodeURIComponent(match[1])).run();
 
           if (!result.meta?.changes) {
             return json({ ok: false, error: "Order not found" }, 404);
           }
 
           return json({ ok: true, status: body.status });
-        } catch {
+        } catch (error) {
+          console.error("POST /api/bot/orders status failed:", error);
           return json({ ok: false, error: "Database update failed" }, 500);
         }
       }
@@ -221,8 +213,9 @@ export default {
       return json({ ok: false, error: "Route not found" }, 404);
     }
 
-    // اطلاعات سفارش؛ فقط با توکن اختصاصی همان لینک
-    const paymentMatch = url.pathname.match(/^\/api\/payment-links\/([a-f0-9]{64})$/);
+    const paymentMatch = url.pathname.match(
+      /^\/api\/payment-links\/([a-f0-9]{64})$/
+    );
 
     if (paymentMatch && request.method === "GET") {
       if (!env.DB) {
@@ -257,27 +250,27 @@ export default {
           order.status !== "pending" ||
           Date.parse(order.expires_at) <= Date.now()
         ) {
-          return json({
-            ok: false,
-            expired: true,
-            error: "Link Expired",
-          }, 410);
+          return json({ ok: false, expired: true, error: "Link Expired" }, 410);
         }
 
         return json({ ok: true, order });
-      } catch {
+      } catch (error) {
+        console.error("GET payment link failed:", error);
         return json({ ok: false, error: "Database query failed" }, 500);
       }
     }
 
-    // مسیر صفحه لینک اختصاصی
-    if (/^\/pay\/[a-f0-9]{64}$/.test(url.pathname) && request.method === "GET") {
+    if (
+      /^\/pay\/[a-f0-9]{64}$/.test(url.pathname) &&
+      request.method === "GET"
+    ) {
       if (!env.ASSETS) {
         return json({ ok: false, error: "Assets not configured" }, 500);
       }
 
       const assetUrl = new URL("/index.html", url.origin);
       const assetRequest = new Request(assetUrl.toString(), request);
+
       return env.ASSETS.fetch(assetRequest);
     }
 
