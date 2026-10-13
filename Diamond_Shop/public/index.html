@@ -13,108 +13,288 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --blue: #00aaff;
+      --cyan: #51d8ff;
+      --bg: #080b12;
+      --panel: #101722;
+      --muted: #a9b8ca;
+      --border: #183d59;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      padding: 28px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       background:
-        radial-gradient(ellipse at top, #10283b 0%, transparent 55%),
-        #080b12;
+        radial-gradient(ellipse at 50% 0%, #10334b 0%, transparent 52%),
+        var(--bg);
       color: #f4f8ff;
       font-family: Tahoma, Arial, sans-serif;
     }
 
     main {
       width: 100%;
-      max-width: 460px;
-      padding: 32px 24px;
-      text-align: center;
-      background: #101722;
-      border: 1px solid #183d59;
-      border-radius: 20px;
+      max-width: 620px;
+      padding: 28px;
+      background: linear-gradient(145deg, #101b2b, #080f1b);
+      border: 1px solid var(--border);
+      border-radius: 22px;
       box-shadow: 0 0 45px #00aaff12;
     }
 
-    .logo {
-      color: #00aaff;
-      font-size: 28px;
+    .brand {
+      text-align: center;
+      color: #f4f8ff;
+      font-size: 25px;
       font-weight: 900;
       letter-spacing: 1px;
     }
 
-    h1 {
-      margin-top: 28px;
-      font-size: 22px;
+    .brand span {
+      color: var(--blue);
     }
 
-    p {
-      color: #a9b8ca;
-      line-height: 2;
+    .brand small {
+      display: block;
+      margin-top: 6px;
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 5px;
+    }
+
+    h1 {
+      margin: 30px 0 12px;
+      text-align: center;
+      font-size: 25px;
+    }
+
+    h1 span {
+      color: var(--blue);
+    }
+
+    .intro {
+      margin: 0 auto 24px;
+      max-width: 480px;
+      text-align: center;
+      color: var(--muted);
       font-size: 14px;
+      line-height: 2.1;
     }
 
     .payment {
-      margin-top: 24px;
-      padding: 18px;
+      padding: 22px;
+      background: #080f1b;
+      border: 1px solid #07568a;
+      border-radius: 18px;
+      box-shadow: inset 0 0 25px #00aaff08;
+    }
+
+    .section-title {
+      margin: 0 0 18px;
+      color: var(--cyan);
+      font-size: 17px;
+    }
+
+    .bank-card {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 22px;
+      padding: 22px;
+      min-height: 185px;
+      border-radius: 17px;
+      border: 1px solid #70d8ff;
+      background:
+        radial-gradient(circle at 90% 10%, #ffffff35, transparent 28%),
+        linear-gradient(125deg, #0c3767, #0755a1 48%, #0a244b);
+      box-shadow: 0 12px 30px #0005;
+    }
+
+    .bank-card::after {
+      content: "";
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      left: -65px;
+      bottom: -145px;
+      border: 1px solid #ffffff35;
+      border-radius: 50%;
+      box-shadow: 0 0 0 22px #ffffff08,
+                  0 0 0 45px #ffffff06;
+    }
+
+    .bank-name {
+      position: relative;
+      z-index: 1;
+      color: #fff;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .bank-name small {
+      display: block;
+      margin-top: 5px;
+      font-size: 11px;
+      font-weight: normal;
+      letter-spacing: 1px;
+    }
+
+    .card-chip {
+      position: relative;
+      z-index: 1;
+      width: 39px;
+      height: 29px;
+      margin-top: 22px;
+      border: 1px solid #f4e1a0;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #fff0bc, #c6a65c);
+    }
+
+    .card-number {
+      position: relative;
+      z-index: 1;
+      margin-top: 17px;
+      direction: ltr;
+      text-align: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: clamp(17px, 4.5vw, 23px);
+      font-weight: bold;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .detail {
+      padding: 15px;
+      background: #101b2b;
       border: 1px solid #183d59;
-      border-radius: 14px;
-      background: #0b111b;
-      text-align: right;
+      border-radius: 12px;
     }
 
-    .payment h2 {
-      margin-top: 0;
-      color: #51d8ff;
+    .detail-label {
+      margin-bottom: 10px;
+      color: var(--cyan);
+      font-size: 13px;
+    }
+
+    .detail-value {
+      color: #f4f8ff;
       font-size: 16px;
+      font-weight: bold;
     }
 
-    .payment p {
-      margin-bottom: 0;
+    .copy-button {
+      display: flex;
+      width: 100%;
+      justify-content: center;
+      align-items: center;
+      gap: 9px;
+      padding: 14px;
+      border: 1px solid var(--blue);
+      border-radius: 11px;
+      background: #06233a;
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .copy-button:hover {
+      background: #093653;
+      box-shadow: 0 0 18px #00aaff20;
+    }
+
+    .copy-button:focus-visible,
+    .ticket:focus-visible {
+      outline: 2px solid white;
+      outline-offset: 3px;
+    }
+
+    .copy-status {
+      min-height: 22px;
+      margin-top: 8px;
+      color: var(--cyan);
+      text-align: center;
+      font-size: 12px;
     }
 
     .ticket {
       display: block;
-      margin-top: 22px;
-      padding: 15px;
+      margin-top: 20px;
+      padding: 16px;
       border-radius: 12px;
-      background: #00aaff;
+      background: linear-gradient(100deg, #008be8, #00baff);
       color: #06111b;
+      text-align: center;
       text-decoration: none;
       font-weight: bold;
-      transition: background 0.2s, transform 0.2s;
+      transition: .2s;
     }
 
     .ticket:hover {
-      background: #51d8ff;
+      filter: brightness(1.12);
       transform: translateY(-2px);
     }
 
     .warning {
       margin-top: 16px;
-      padding: 13px;
+      padding: 14px;
       border: 1px solid #183d59;
-      border-radius: 10px;
-      background: #09283b;
-      color: #51d8ff;
+      border-radius: 11px;
+      background: #092033;
+      color: var(--cyan);
       font-size: 13px;
       line-height: 2;
     }
 
     footer {
-      margin-top: 26px;
+      margin-top: 25px;
+      text-align: center;
       color: #62748b;
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 2;
     }
 
-    @media (max-width: 400px) {
+    footer span {
+      color: var(--blue);
+      letter-spacing: 3px;
+    }
+
+    @media (max-width: 420px) {
       main {
-        padding: 26px 18px;
+        padding: 20px 15px;
       }
 
-      .logo {
-        font-size: 24px;
+      .payment {
+        padding: 15px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .details {
+        grid-template-columns: 1fr;
+      }
+
+      .bank-card {
+        padding: 17px 12px;
+      }
+
+      .card-number {
+        letter-spacing: 0;
       }
     }
   </style>
@@ -122,21 +302,55 @@
 
 <body>
   <main>
-    <div class="logo">💎 DIAMOND SHOP</div>
+    <header class="brand">
+      💎 DIAMOND <span>SHOP</span>
+      <small>PLAY · BUY · ENJOY</small>
+    </header>
 
-    <h1>اطلاعات سفارش و پرداخت</h1>
+    <h1>اطلاعات <span>پرداخت</span></h1>
 
-    <p>
-      برای ثبت سفارش، انتخاب محصول و دریافت مبلغ نهایی،
-      از طریق سرور Discord با پشتیبانی در ارتباط باش.
+    <p class="intro">
+      برای ثبت سفارش و دریافت مبلغ نهایی، ابتدا وارد سرور دیسکورد شو.
+      پس از دریافت مبلغ از پشتیبانی، اطلاعات کارت زیر را بررسی کن.
     </p>
 
-    <section class="payment">
-      <h2>💳 راهنمای پرداخت</h2>
-      <p>
-        اطلاعات کارت و مبلغ پرداخت را قبل از واریز
-        از ادمین دریافت و بررسی کن.
-      </p>
+    <section class="payment" aria-labelledby="payment-title">
+      <h2 class="section-title" id="payment-title">
+        💳 اطلاعات کارت بانکی
+      </h2>
+
+      <div class="bank-card">
+        <div class="bank-name">
+          بانک صادرات ایران
+          <small>BANK SADERAT IRAN</small>
+        </div>
+
+        <div class="card-chip" aria-hidden="true"></div>
+
+        <div class="card-number" dir="ltr">
+          6037 - 6976 - 2938 - 7157
+        </div>
+      </div>
+
+      <div class="details">
+        <div class="detail">
+          <div class="detail-label">👤 نام صاحب کارت</div>
+          <div class="detail-value">جعفری</div>
+        </div>
+
+        <div class="detail">
+          <div class="detail-label">🏦 بانک</div>
+          <div class="detail-value">صادرات ایران</div>
+        </div>
+      </div>
+
+      <button class="copy-button" id="copy-card" type="button">
+        <span aria-hidden="true">▣</span>
+        کپی شماره کارت
+      </button>
+
+      <div class="copy-status" id="copy-status" role="status"
+           aria-live="polite"></div>
     </section>
 
     <a
@@ -145,18 +359,53 @@
       target="_blank"
       rel="noopener noreferrer"
     >
-      🎫 ورود به سرور و ثبت سفارش
+      🎮 ورود به دیسکورد و ثبت سفارش
     </a>
 
     <div class="warning">
-      📩 لطفاً رسید پرداخت را فقط داخل تیکت Discord ارسال کن.
-      <br>
-      نیازی به آپلود رسید در سایت نیست.
+      📩 <strong>توجه:</strong>
+      مبلغ نهایی را از پشتیبانی دریافت کن و رسید پرداخت را فقط داخل
+      تیکت Discord بفرست. نیازی به آپلود رسید در سایت نیست.
     </div>
 
     <footer>
-      Diamond Shop · Secure Order Portal
+      <span>DIAMOND SHOP</span>
+      <br>
+      فروشگاه دایموند · سفارش و پشتیبانی در دیسکورد
     </footer>
   </main>
+
+  <script>
+    const copyButton = document.getElementById("copy-card");
+    const copyStatus = document.getElementById("copy-status");
+    const cardNumber = "6037697629387157";
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(cardNumber);
+        } else {
+          const field = document.createElement("textarea");
+          field.value = cardNumber;
+          field.setAttribute("readonly", "");
+          field.style.position = "fixed";
+          field.style.opacity = "0";
+          document.body.appendChild(field);
+          field.select();
+
+          const copied = document.execCommand("copy");
+          field.remove();
+
+          if (!copied) throw new Error("Copy failed");
+        }
+
+        copyStatus.textContent = "شماره کارت کپی شد ✓";
+        copyButton.querySelector("span").textContent = "✓";
+      } catch {
+        copyStatus.textContent =
+          "کپی خودکار انجام نشد؛ شماره کارت را دستی انتخاب کن.";
+      }
+    });
+  </script>
 </body>
 </html>
