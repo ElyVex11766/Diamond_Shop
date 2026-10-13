@@ -253,7 +253,7 @@ export default {
 
         const order = await env.DB.prepare(
           "SELECT id, discord_username, item_name, quantity, unit_price_toman, amount_toman, status, created_at, expires_at FROM payment_links WHERE token_hash = ? LIMIT 1"
-        )
+          }
           .bind(tokenHash)
           .first();
 
