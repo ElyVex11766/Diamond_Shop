@@ -1,3 +1,4 @@
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -175,7 +176,10 @@ export default {
           return json(result.results || []);
         } catch (error) {
           console.error("GET /api/bot/orders failed:", error);
-          return json({ ok: false, error: "Database query failed" }, 500);
+          return json(
+            { ok: false, error: "Database query failed" },
+            500
+          );
         }
       }
 
@@ -218,7 +222,10 @@ export default {
           return json({ ok: true, status: body.status });
         } catch (error) {
           console.error("Order status update failed:", error);
-          return json({ ok: false, error: "Database update failed" }, 500);
+          return json(
+            { ok: false, error: "Database update failed" },
+            500
+          );
         }
       }
 
@@ -244,18 +251,13 @@ export default {
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
 
-        const order = await env.DB.prepare(`
-          SELECT id, discord_username, item_name, quantity,
-                 unit_price_toman, amount_toman, status,
-                 created_at, expires_at
-          FROM payment_links
-          WHERE token_hash = ?
-          LIMIT 1
-        `)
+        const order = await env.DB.prepare(
+          "SELECT id, discord_username, item_name, quantity, unit_price_toman, amount_toman, status, created_at, expires_at FROM payment_links WHERE token_hash = ? LIMIT 1"
+        )
           .bind(tokenHash)
           .first();
-      }
-        if (!order) 
+
+        if (!order) {
           return json({ ok: false, error: "Link not found" }, 404);
         }
 
@@ -272,7 +274,10 @@ export default {
         return json({ ok: true, order });
       } catch (error) {
         console.error("Payment link lookup failed:", error);
-        return json({ ok: false, error: "Database query failed" }, 500);
+        return json(
+          { ok: false, error: "Database query failed" },
+          500
+        );
       }
     }
 
