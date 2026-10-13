@@ -251,7 +251,7 @@ export default {
           FROM payment_links
           WHERE token_hash = ?
           LIMIT 1
-        `}
+        `)
           .bind(tokenHash)
           .first();
         {
