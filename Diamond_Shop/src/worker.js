@@ -21,6 +21,7 @@ export default {
       return json({ ok: true, service: "Diamond Shop API" });
     }
 
+    // Discord bot API
     if (url.pathname.startsWith("/api/bot/")) {
       const auth = request.headers.get("Authorization") || "";
 
@@ -36,6 +37,7 @@ export default {
         return json({ ok: false, error: "Database not configured" }, 500);
       }
 
+      // Create the payment-links table if needed
       try {
         await env.DB.prepare(`
           CREATE TABLE IF NOT EXISTS payment_links (
@@ -57,7 +59,11 @@ export default {
         return json({ ok: false, error: "Payment table setup failed" }, 500);
       }
 
-      if (url.pathname === "/api/bot/payment-links" && request.method === "POST") {
+      // Create a private payment link
+      if (
+        url.pathname === "/api/bot/payment-links" &&
+        request.method === "POST"
+      ) {
         let body;
 
         try {
@@ -95,9 +101,10 @@ export default {
           return json({ ok: false, error: "Invalid order data" }, 400);
         }
 
-        const amount = amount_toman === undefined
-          ? quantity * unit_price_toman
-          : amount_toman;
+        const amount =
+          amount_toman === undefined
+            ? quantity * unit_price_toman
+            : amount_toman;
 
         if (!Number.isSafeInteger(amount)) {
           return json({ ok: false, error: "Invalid total amount" }, 400);
@@ -117,8 +124,6 @@ export default {
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
 
-        const createdAt = new Date().toISOString();
-
         try {
           await env.DB.prepare(`
             INSERT INTO payment_links (
@@ -135,7 +140,7 @@ export default {
             quantity,
             unit_price_toman,
             amount,
-            createdAt,
+            new Date().toISOString(),
             new Date(expires_at).toISOString()
           ).run();
 
@@ -146,15 +151,19 @@ export default {
             expires_at: new Date(expires_at).toISOString(),
           }, 201);
         } catch (error) {
-          console.error("Could not create payment link:", error);
+          console.error("Payment link creation failed:", error);
           return json({
             ok: false,
-            error: "Could not create payment link. Check whether this order ID already exists.",
+            error: "Could not create payment link. The order ID may already exist.",
           }, 409);
         }
       }
 
-      if (url.pathname === "/api/bot/orders" && request.method === "GET") {
+      // Existing bot orders endpoint
+      if (
+        url.pathname === "/api/bot/orders" &&
+        request.method === "GET"
+      ) {
         try {
           const result = await env.DB.prepare(`
             SELECT id, discord_user_id, item_name, quantity,
@@ -171,7 +180,10 @@ export default {
         }
       }
 
-      const match = url.pathname.match(/^\/api\/bot\/orders\/([^/]+)\/status$/);
+      // Update an existing bot order
+      const match = url.pathname.match(
+        /^\/api\/bot\/orders\/([^/]+)\/status$/
+      );
 
       if (match && request.method === "POST") {
         let body;
@@ -205,7 +217,7 @@ export default {
 
           return json({ ok: true, status: body.status });
         } catch (error) {
-          console.error("POST /api/bot/orders status failed:", error);
+          console.error("Order status update failed:", error);
           return json({ ok: false, error: "Database update failed" }, 500);
         }
       }
@@ -213,6 +225,7 @@ export default {
       return json({ ok: false, error: "Route not found" }, 404);
     }
 
+    // Look up a private payment link using its token
     const paymentMatch = url.pathname.match(
       /^\/api\/payment-links\/([a-f0-9]{64})$/
     );
@@ -250,16 +263,21 @@ export default {
           order.status !== "pending" ||
           Date.parse(order.expires_at) <= Date.now()
         ) {
-          return json({ ok: false, expired: true, error: "Link Expired" }, 410);
+          return json({
+            ok: false,
+            expired: true,
+            error: "Link Expired",
+          }, 410);
         }
 
         return json({ ok: true, order });
       } catch (error) {
-        console.error("GET payment link failed:", error);
+        console.error("Payment link lookup failed:", error);
         return json({ ok: false, error: "Database query failed" }, 500);
       }
     }
 
+    // Serve the payment page
     if (
       /^\/pay\/[a-f0-9]{64}$/.test(url.pathname) &&
       request.method === "GET"
@@ -269,9 +287,7 @@ export default {
       }
 
       const assetUrl = new URL("/index.html", url.origin);
-      const assetRequest = new Request(assetUrl.toString(), request);
-
-      return env.ASSETS.fetch(assetRequest);
+      return env.ASSETS.fetch(new Request(assetUrl.toString(), request));
     }
 
     if (env.ASSETS) {
