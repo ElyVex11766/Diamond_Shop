@@ -255,6 +255,108 @@ export default {
         try {
           const result = await env.DB.prepare(
             "UPDATE orders SET status = ? WHERE id = ?"
+          )
+            .bind(body.status, decodeURIComponent(match[1]))
+            .run();
+
+          if (!result.meta?.changes) {
+            return json({ ok: false, error: "Order not found" }, 404);
+          }
+
+          return json({ ok: true, status: body.status });
+        } catch (error) {
+          console.error("Order status update failed:", error);
+          return json(
+            { ok: false, error: "Could not update order status" },
+            500
+          );
+        }
+      }
+
+      const paymentMatch = url.pathname.match(
+        /^\/api\/payment-links\/([a-f0-9]{64})$/
+      );
+
+      if (paymentMatch && method === "GET") {
+        try {
+          const tokenHash = await sha256Hex(paymentMatch[1]);
+
+          const order = await env.DB.prepare(
+            "SELECT id, order_id, discord_username, item_name, quantity, unit_price_toman, amount_toman, status, created_at, expires_at FROM payment_links WHERE token_hash = ? LIMIT 1"
+          )
+            .bind(tokenHash)
+            .first();
+
+          if (!order) {
+            return json({ ok: false, error: "Link not found" }, 404);
+          }
+
+          if (
+            order.status !== "pending" ||
+            !order.expires_at ||
+            Date.parse(order.expires_at) <= Date.now()
+          ) {
+            return json(
+              { ok: false, expired: true, error: "Link expired" },
+              410
+            );
+          }
+
+          return json({ ok: true, order });
+        } catch (error) {
+          console.error("Payment link lookup failed:", error);
+          return json(
+            { ok: false, error: "Database query failed" },
+            500
+          );
+        }
+      }
+
+      const payMatch = url.pathname.match(/^\/pay\/([a-f0-9]{64})$/);
+
+      if (payMatch && method === "GET") {
+        if (!env.ASSETS) {
+          return json(
+            { ok: false, error: "Assets binding is missing" },
+            500
+          );
+        }
+
+        const assetUrl = new URL("/index.html", request.url);
+        return env.ASSETS.fetch(
+          new Request(assetUrl.toString(), request)
+        );
+      }
+
+      if (url.pathname.startsWith("/api/")) {
+        return json({ ok: false, error: "API endpoint not found" }, 404);
+      }
+
+      if (env.ASSETS) {
+        return env.ASSETS.fetch(request);
+      }
+
+      return json({ ok: false, error: "Not found" }, 404);
+    } catch (error) {
+      console.error("Worker error:", error);
+      return json({ ok: false, error: "Internal server error" }, 500);
+    }
+
+        const allowed = [
+          "pending",
+          "approved",
+          "rejected",
+          "reported_scam",
+          "completed",
+        ];
+
+        if (!allowed.includes(body.status)) {
+          return json({ ok: false, error: "Invalid status" }, 400);
+        }
+
+        try {
+          const result = await env.DB.prepare(
+            "UPDATE orders SET status = ? WHERE id = ?"
           ).bind(
             body.status,
             decodeURIComponent(match[1])
