@@ -273,7 +273,6 @@ export default {
           });
         } catch (error) {
           console.error("Order status update failed:", error);
-
           return json({
             ok: false,
             error: "Could not update order status",
