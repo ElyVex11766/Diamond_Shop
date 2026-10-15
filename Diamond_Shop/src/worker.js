@@ -331,16 +331,6 @@ export default {
         }
       }
       
-if (url.pathname.startsWith("/pay/")) {
-  return new Response("PAY ROUTE REACHED: " + url.pathname, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-      
       const payMatch = url.pathname.match(
   /^\/pay\/([a-f0-9]{64})\/?$/i
 );
