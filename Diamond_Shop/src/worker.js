@@ -11,6 +11,7 @@ function json(data, status = 200) {
     headers: {
       ...corsHeaders,
       "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
     },
   });
 }
@@ -57,6 +58,7 @@ export default {
     }
 
     try {
+      // سلامت Worker و دیتابیس
       if (url.pathname === "/health" || url.pathname === "/api/health") {
         try {
           await env.DB.prepare("SELECT 1").first();
@@ -75,6 +77,7 @@ export default {
         }
       }
 
+      // محصولات فروشگاه
       if (url.pathname === "/api/items" && method === "GET") {
         try {
           const result = await env.DB.prepare(
@@ -95,6 +98,7 @@ export default {
         }
       }
 
+      // ساخت لینک پرداخت توسط ربات
       if (
         url.pathname === "/api/bot/payment-links" &&
         method === "POST"
@@ -199,6 +203,7 @@ export default {
         }
       }
 
+      // سفارش‌های در انتظار برای ربات
       if (url.pathname === "/api/bot/orders" && method === "GET") {
         if (!isBotAuthorized(request, env)) {
           return json({ ok: false, error: "Unauthorized" }, 401);
@@ -223,6 +228,7 @@ export default {
         }
       }
 
+      // تغییر وضعیت سفارش توسط ربات
       const match = url.pathname.match(
         /^\/api\/bot\/orders\/([^/]+)\/status$/
       );
@@ -273,7 +279,7 @@ export default {
           });
         } catch (error) {
           console.error("Order status update failed:", error);
-          
+
           return json({
             ok: false,
             error: "Could not update order status",
@@ -281,8 +287,9 @@ export default {
         }
       }
 
+      // دریافت اطلاعات سفارش با توکن پرداخت
       const paymentMatch = url.pathname.match(
-        /^\/api\/payment-links\/([a-f0-9]{64})$/
+        /^\/api\/payment-links\/([a-f0-9]{64})\/?$/i
       );
 
       if (paymentMatch && method === "GET") {
@@ -330,25 +337,46 @@ export default {
           }, 500);
         }
       }
-      
+
+      // صفحه پرداخت: فایل HTML را بدون Redirect برگردان
       const payMatch = url.pathname.match(
-  /^\/pay\/([a-f0-9]{64})\/?$/i
-);
+        /^\/pay\/([a-f0-9]{64})\/?$/i
+      );
 
       if (payMatch && method === "GET") {
         if (!env.ASSETS) {
-          return json({
-            ok: false,
-            error: "Assets binding is missing",
-          }, 500);
+          return new Response(
+            "Assets binding is missing",
+            {
+              status: 500,
+              headers: {
+                "Content-Type": "text/plain; charset=utf-8",
+                "Cache-Control": "no-store",
+              },
+            }
+          );
         }
 
-        const assetUrl = new URL("/index.html", request.url);
-        return env.ASSETS.fetch(
-          new Request(assetUrl.toString(), request)
+        const assetUrl = new URL("/index.html", url.origin);
+
+        const assetResponse = await env.ASSETS.fetch(
+          new Request(assetUrl.toString(), {
+            method: "GET",
+            headers: request.headers,
+          })
         );
+
+        const headers = new Headers(assetResponse.headers);
+        headers.set("Cache-Control", "no-store");
+
+        return new Response(assetResponse.body, {
+          status: assetResponse.status,
+          statusText: assetResponse.statusText,
+          headers,
+        });
       }
 
+      // سایر APIهای ناشناخته
       if (url.pathname.startsWith("/api/")) {
         return json({
           ok: false,
@@ -356,6 +384,7 @@ export default {
         }, 404);
       }
 
+      // فایل‌های عادی سایت
       if (env.ASSETS) {
         return env.ASSETS.fetch(request);
       }
