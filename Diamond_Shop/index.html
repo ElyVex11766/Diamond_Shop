@@ -8,57 +8,276 @@
   <title>Diamond Shop | پرداخت سفارش</title>
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: #080b12;
+      padding: 24px 14px;
+      background: radial-gradient(ellipse at top, #10283b, #080b12 65%);
       color: #f4f8ff;
       font-family: Tahoma, Arial, sans-serif;
+      line-height: 1.9;
     }
-    main {
-      width: 100%;
-      max-width: 460px;
-      padding: 32px 24px;
+
+    .wrap { max-width: 720px; margin: auto; }
+
+    .brand {
       text-align: center;
-      background: #101722;
-      border: 1px solid #183d59;
-      border-radius: 20px;
-      box-shadow: 0 0 45px #00aaff12;
-    }
-    .logo {
-      color: #00aaff;
-      font-size: 30px;
+      font-size: 27px;
       font-weight: 900;
+    }
+
+    .brand span { color: #00aaff; }
+
+    .brand small {
+      display: block;
+      color: #51d8ff;
+      font-size: 11px;
+      letter-spacing: 3px;
+    }
+
+    .card {
+      margin-top: 24px;
+      padding: 22px;
+      border: 1px solid #183d59;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #101b2b, #0a101a);
+      box-shadow: 0 10px 35px #0005;
+    }
+
+    h1 { font-size: 23px; text-align: center; }
+    .muted { color: #a9b8ca; font-size: 13px; }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 4px;
+      border-bottom: 1px solid #183d59;
+    }
+
+    .row span { color: #a9b8ca; }
+    .row strong { text-align: left; overflow-wrap: anywhere; }
+
+    .total {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #07568a;
+      border-radius: 12px;
+      background: #081725;
+      color: #51d8ff;
+      text-align: center;
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .bank {
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid #70d8ff;
+      border-radius: 16px;
+      background: linear-gradient(125deg, #0c3767, #0755a1, #0a244b);
+    }
+
+    .bank small { display: block; font-size: 11px; }
+
+    .number {
+      margin-top: 16px;
+      text-align: center;
+      direction: ltr;
+      font: bold 22px Arial;
       letter-spacing: 1px;
     }
-    h1 { font-size: 22px; margin-top: 28px; }
-    p { color: #9eafc4; line-height: 2; font-size: 14px; }
-    .status {
-      display: inline-block;
-      margin-top: 18px;
-      padding: 9px 14px;
+
+    button, .ticket {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 13px;
+      border: 1px solid #00aaff;
+      border-radius: 11px;
+      background: #06233a;
+      color: #51d8ff;
+      text-align: center;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .ticket {
+      border: 0;
+      background: linear-gradient(100deg, #008be8, #00baff);
+      color: #06111b;
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 12px;
+      border: 1px solid #183d59;
       border-radius: 10px;
-      background: #09283b;
       color: #51d8ff;
       font-size: 13px;
     }
-    footer { margin-top: 28px; color: #62748b; font-size: 12px; }
+
+    .error { color: #ff8292; text-align: center; }
+    footer { margin-top: 28px; color: #62748b; text-align: center; font-size: 12px; }
+    footer span { color: #00aaff; }
+
+    [hidden] { display: none !important; }
   </style>
 </head>
+
 <body>
-  <main>
-    <div class="logo">💎 DIAMOND SHOP</div>
-    <h1>درگاه سفارش شما</h1>
-    <p>
-      اطلاعات سفارش و مبلغ پرداخت پس از اتصال به سیستم سفارش‌ها
-      در این صفحه نمایش داده خواهد شد.
-    </p>
-    <div class="status">سیستم در حال راه‌اندازی است</div>
-    <footer>Diamond Shop · Secure Order Portal</footer>
+  <main class="wrap">
+    <header class="brand">
+      💎 DIAMOND <span>SHOP</span>
+      <small>SECURE ORDER DETAILS</small>
+    </header>
+
+    <section class="card">
+      <h1>💳 اطلاعات سفارش شما</h1>
+      <p id="loading" class="muted">در حال دریافت اطلاعات سفارش...</p>
+
+      <div id="content" hidden>
+        <div class="row">
+          <span>شماره سفارش</span>
+          <strong id="order-id"></strong>
+        </div>
+
+        <div class="row">
+          <span>نام خریدار در Discord</span>
+          <strong id="username"></strong>
+        </div>
+
+        <div class="row">
+          <span>محصول</span>
+          <strong id="item"></strong>
+        </div>
+
+        <div class="row">
+          <span>تعداد</span>
+          <strong id="quantity"></strong>
+        </div>
+
+        <div class="row">
+          <span>قیمت هر عدد</span>
+          <strong id="unit-price"></strong>
+        </div>
+
+        <div class="total" id="total"></div>
+
+        <div class="bank">
+          <strong>بانک صادرات ایران</strong>
+          <small>BANK SADERAT IRAN</small>
+          <div class="number" dir="ltr">6037 - 6976 - 2938 - 7157</div>
+        </div>
+
+        <div class="row">
+          <span>نام صاحب کارت</span>
+          <strong>جعفری</strong>
+        </div>
+
+        <button id="copy" type="button">کپی شماره کارت</button>
+        <p id="copy-status" class="muted" role="status"></p>
+
+        <a class="ticket"
+           href="https://discord.gg/8JxuZckBs"
+           target="_blank"
+           rel="noopener noreferrer">
+          🎮 ارسال رسید در تیکت دیسکورد
+        </a>
+
+        <div class="notice">
+          ⚠️ مبلغ را دقیقاً مطابق همین سفارش واریز کن و رسید را در تیکت
+          دیسکورد بفرست. پرداخت در این صفحه به‌صورت خودکار تأیید نمی‌شود.
+        </div>
+
+        <p class="muted">اعتبار لینک تا: <span id="expires"></span></p>
+      </div>
+    </section>
+
+    <footer>
+      <span>DIAMOND SHOP</span><br>
+      پرداخت و پشتیبانی سفارش در دیسکورد
+    </footer>
   </main>
+
+  <script>
+    "use strict";
+
+    const $ = (id) => document.getElementById(id);
+
+    function toman(value) {
+      return Number(value || 0).toLocaleString("fa-IR") + " تومان";
+    }
+
+    async function loadOrder() {
+      const match = location.pathname.match(/^\/pay\/([a-f0-9]{64})\/?$/i);
+
+      if (!match) {
+        $("loading").textContent = "لینک پرداخت معتبر نیست.";
+        $("loading").className = "error";
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "/api/payment-links/" + match[1],
+          {
+            headers: { Accept: "application/json" },
+            cache: "no-store"
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok || !data.order) {
+          throw new Error(
+            response.status === 410
+              ? "این لینک پرداخت منقضی شده است."
+              : response.status === 404
+              ? "لینک پرداخت پیدا نشد."
+              : data.error || "دریافت سفارش ناموفق بود."
+          );
+        }
+
+        const order = data.order;
+
+        $("order-id").textContent = order.order_id || order.id || "—";
+        $("username").textContent = order.discord_username || "—";
+        $("item").textContent = order.item_name || "—";
+        $("quantity").textContent =
+          Number(order.quantity || 0).toLocaleString("fa-IR");
+        $("unit-price").textContent = toman(order.unit_price_toman);
+        $("total").textContent = "مبلغ نهایی: " + toman(order.amount_toman);
+        $("expires").textContent = order.expires_at
+          ? new Date(order.expires_at).toLocaleString("fa-IR")
+          : "مشخص نشده";
+
+        $("loading").hidden = true;
+        $("content").hidden = false;
+      } catch (error) {
+        $("loading").textContent =
+          error.message || "خطا در دریافت اطلاعات سفارش.";
+        $("loading").className = "error";
+      }
+    }
+
+    $("copy").addEventListener("click", async () => {
+      const number = "6037697629387157";
+
+      try {
+        await navigator.clipboard.writeText(number);
+        $("copy-status").textContent = "شماره کارت کپی شد ✓";
+      } catch {
+        $("copy-status").textContent =
+          "کپی خودکار انجام نشد؛ شماره کارت را دستی کپی کن.";
+      }
+    });
+
+    loadOrder();
+  </script>
 </body>
 </html>
-
