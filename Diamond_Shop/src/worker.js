@@ -332,8 +332,8 @@ export default {
       }
 
       const payMatch = url.pathname.match(
-        /^\/pay\/([a-f0-9]{64})$/
-      );
+  /^\/pay\/([a-f0-9]{64})\/?$/i
+);
 
       if (payMatch && method === "GET") {
         if (!env.ASSETS) {
