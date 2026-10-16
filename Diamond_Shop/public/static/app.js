@@ -344,13 +344,13 @@ async function loadPaymentPage() {
       ></p>
 
       <a
-        class="ticket"
-        href="https://discord.gg/8JxuZckBs"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        🎮 ارسال رسید در تیکت دیسکورد
-      </a>
+  class="ticket"
+  href="${escapeHTML(order.ticket_url || "#")}"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  🎮 ارسال رسید در تیکت دیسکورد
+</a>
 
       <div class="notice">
         ⚠️ فقط مبلغ نمایش‌داده‌شده برای همین سفارش را واریز کن.
