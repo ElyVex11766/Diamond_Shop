@@ -125,10 +125,10 @@ export default {
         );
         const expiresAt = body.expires_at;
         const ticketUrl =
-          typeof body.ticket_url === "string" &&
-          /^https:\/\/discord\.com\/channels\/\d+\/\d+\/?$/.test(body.ticket_url)
-            ? body.ticket_url
-            : null;
+  typeof body.ticket_url === "string" &&
+  body.ticket_url.startsWith("https://discord.com/channels/")
+    ? body.ticket_url.trim()
+    : null;
 
         if (
           orderId == null ||
