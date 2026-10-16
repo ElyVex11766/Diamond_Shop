@@ -124,6 +124,11 @@ export default {
           body.amount_toman ?? quantity * unitPrice
         );
         const expiresAt = body.expires_at;
+        const ticketUrl =
+          typeof body.ticket_url === "string" &&
+          /^https:\/\/discord\.com\/channels\/\d+\/\d+\/?$/.test(body.ticket_url)
+            ? body.ticket_url
+            : null;
 
         if (
           orderId == null ||
@@ -158,7 +163,8 @@ export default {
               amount_toman INTEGER NOT NULL,
               status TEXT NOT NULL DEFAULT 'pending',
               created_at TEXT NOT NULL,
-              expires_at TEXT NOT NULL
+              expires_at TEXT NOT NULL,
+              ticket_url TEXT
             )
           `).run();
 
@@ -171,8 +177,9 @@ export default {
             INSERT INTO payment_links (
               id, order_id, token_hash, discord_username,
               item_name, quantity, unit_price_toman,
-              amount_toman, status, created_at, expires_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              amount_toman, status, created_at, expires_at,
+              ticket_url
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).bind(
             id,
             id,
@@ -184,7 +191,8 @@ export default {
             Math.round(amount),
             "pending",
             createdAt,
-            new Date(expiresAt).toISOString()
+            new Date(expiresAt).toISOString(),
+            ticketUrl
           ).run();
 
           return json({
@@ -299,7 +307,7 @@ export default {
           const order = await env.DB.prepare(`
             SELECT id, order_id, discord_username, item_name,
                    quantity, unit_price_toman, amount_toman,
-                   status, created_at, expires_at
+                   status, created_at, expires_at, ticket_url
             FROM payment_links
             WHERE token_hash = ?
             LIMIT 1
@@ -338,23 +346,20 @@ export default {
         }
       }
 
-      // صفحه پرداخت: فایل HTML را بدون Redirect برگردان
+      // صفحه پرداخت
       const payMatch = url.pathname.match(
         /^\/pay\/([a-f0-9]{64})\/?$/i
       );
 
       if (payMatch && method === "GET") {
         if (!env.ASSETS) {
-          return new Response(
-            "Assets binding is missing",
-            {
-              status: 500,
-              headers: {
-                "Content-Type": "text/plain; charset=utf-8",
-                "Cache-Control": "no-store",
-              },
-            }
-          );
+          return new Response("Assets binding is missing", {
+            status: 500,
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
         }
 
         const assetUrl = new URL("/index.html", url.origin);
