@@ -1,4 +1,3 @@
-
 "use strict";
 
 const API_URL = "/api/items";
@@ -19,7 +18,7 @@ function escapeHTML(value) {
   })[char]);
 }
 
-/* صفحه اختصاصی پرداخت: /pay/TOKEN */
+/* لینک اختصاصی پرداخت: /pay/توکن */
 async function loadPaymentPage() {
   const match = window.location.pathname.match(/^\/pay\/([a-f0-9]{64})\/?$/i);
   if (!match) return false;
@@ -58,9 +57,23 @@ async function loadPaymentPage() {
         line-height: 1.9;
       }
 
-      .payment-wrap { width: 100%; max-width: 720px; margin: auto; }
-      .brand { text-align: center; font-size: 27px; font-weight: 900; }
-      .brand span { color: #00aaff; }
+      .payment-wrap {
+        width: 100%;
+        max-width: 720px;
+        margin: auto;
+      }
+
+      .brand {
+        text-align: center;
+        font-size: 27px;
+        font-weight: 900;
+      }
+
+      .brand span,
+      h1 span {
+        color: #00aaff;
+      }
+
       .brand small {
         display: block;
         color: #51d8ff;
@@ -77,8 +90,15 @@ async function loadPaymentPage() {
         box-shadow: 0 10px 35px #0002;
       }
 
-      h1 { font-size: 24px; text-align: center; }
-      .section-description { color: #a9b8ca; font-size: 13px; }
+      h1 {
+        font-size: 24px;
+        text-align: center;
+      }
+
+      .section-description {
+        color: #a9b8ca;
+        font-size: 13px;
+      }
 
       .order-row {
         display: flex;
@@ -88,8 +108,50 @@ async function loadPaymentPage() {
         border-bottom: 1px solid #183d59;
       }
 
-      .order-row span { color: #a9b8ca; }
-      .order-row strong { text-align: left; overflow-wrap: anywhere; }
+      .order-row span {
+        color: #a9b8ca;
+      }
+
+      .order-row strong {
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+
+      .expiry-timer {
+        margin-top: 16px;
+        padding: 12px;
+        border: 1px solid #183d59;
+        border-radius: 12px;
+        background: #0b1725;
+        color: #a9b8ca;
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .expiry-timer strong {
+        display: block;
+        color: #51d8ff;
+        font: 700 25px Arial, sans-serif;
+        direction: ltr;
+      }
+
+      .expiry-timer.expired {
+        border-color: #8a3544;
+        color: #ff9aa8;
+      }
+
+      .expiry-timer.expired strong,
+      .expired-message {
+        color: #ff8292;
+      }
+
+      .expired-message {
+        text-align: center;
+        padding: 14px;
+        border: 1px solid #71313d;
+        border-radius: 12px;
+        background: #241018;
+      }
 
       .total {
         margin-top: 16px;
@@ -111,8 +173,14 @@ async function loadPaymentPage() {
         background: linear-gradient(125deg, #0c3767, #0755a1 48%, #0a244b);
       }
 
-      .bank-name { font-weight: bold; }
-      .bank-name small { display: block; font-size: 11px; }
+      .bank-name {
+        font-weight: bold;
+      }
+
+      .bank-name small {
+        display: block;
+        font-size: 11px;
+      }
 
       .card-number {
         margin-top: 16px;
@@ -122,7 +190,8 @@ async function loadPaymentPage() {
         letter-spacing: 1px;
       }
 
-      .copy-button, .ticket {
+      .copy-button,
+      .ticket {
         display: block;
         width: 100%;
         box-sizing: border-box;
@@ -155,9 +224,22 @@ async function loadPaymentPage() {
         font-size: 13px;
       }
 
-      .error-message { color: #ff8292; text-align: center; }
-      footer { margin-top: 30px; color: #62748b; text-align: center; font-size: 12px; }
-      footer span { color: #00aaff; letter-spacing: 2px; }
+      .error-message {
+        color: #ff8292;
+        text-align: center;
+      }
+
+      footer {
+        margin-top: 30px;
+        color: #62748b;
+        text-align: center;
+        font-size: 12px;
+      }
+
+      footer span {
+        color: #00aaff;
+        letter-spacing: 2px;
+      }
     </style>
   `;
 
@@ -177,12 +259,17 @@ async function loadPaymentPage() {
         response.status === 410
           ? "این لینک پرداخت منقضی شده یا قبلاً استفاده شده است."
           : response.status === 404
-          ? "این لینک پرداخت معتبر نیست."
-          : data.error || "دریافت اطلاعات سفارش ناموفق بود."
+            ? "این لینک پرداخت معتبر نیست."
+            : (data.error || "دریافت اطلاعات سفارش ناموفق بود.")
       );
     }
 
     const order = data.order;
+    const expiryTime = new Date(order.expires_at).getTime();
+
+    if (!Number.isFinite(expiryTime)) {
+      throw new Error("زمان انقضای لینک از سرور دریافت نشد.");
+    }
 
     loading.textContent = "اطلاعات سفارش ثبت‌شده برای این لینک:";
 
@@ -212,7 +299,17 @@ async function loadPaymentPage() {
         <strong>${formatToman(order.unit_price_toman)}</strong>
       </div>
 
-      <div class="total">
+      <div
+        class="expiry-timer"
+        id="payment-expiry-timer"
+        role="timer"
+        aria-live="off"
+      >
+        زمان باقی‌مانده برای پرداخت
+        <strong id="payment-countdown" dir="ltr">30:00</strong>
+      </div>
+
+      <div class="total" id="payment-total">
         مبلغ نهایی: ${formatToman(order.amount_toman)}
       </div>
 
@@ -221,6 +318,7 @@ async function loadPaymentPage() {
           بانک صادرات ایران
           <small>BANK SADERAT IRAN</small>
         </div>
+
         <div class="card-number" dir="ltr">
           6037 - 6976 - 2938 - 7157
         </div>
@@ -231,16 +329,26 @@ async function loadPaymentPage() {
         <strong>جعفری</strong>
       </div>
 
-      <button class="copy-button" id="copy-payment-card" type="button">
+      <button
+        class="copy-button"
+        id="copy-payment-card"
+        type="button"
+      >
         کپی شماره کارت
       </button>
 
-      <p id="copy-payment-status" class="section-description" role="status"></p>
+      <p
+        id="copy-payment-status"
+        class="section-description"
+        role="status"
+      ></p>
 
-      <a class="ticket"
-         href="https://discord.gg/8JxuZckBs"
-         target="_blank"
-         rel="noopener noreferrer">
+      <a
+        class="ticket"
+        href="https://discord.gg/8JxuZckBs"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         🎮 ارسال رسید در تیکت دیسکورد
       </a>
 
@@ -252,37 +360,116 @@ async function loadPaymentPage() {
 
       <p class="section-description">
         اعتبار لینک تا:
-        ${escapeHTML(new Date(order.expires_at).toLocaleString("fa-IR"))}
+        ${escapeHTML(new Date(expiryTime).toLocaleString("fa-IR"))}
       </p>
     `;
 
-    document.querySelector("#copy-payment-card").addEventListener("click", async () => {
-      const status = document.querySelector("#copy-payment-status");
+    const timerBox = document.querySelector("#payment-expiry-timer");
+    const countdown = document.querySelector("#payment-countdown");
+    const totalBox = document.querySelector("#payment-total");
+    const bankCard = content.querySelector(".bank-card");
+    const copyButton = document.querySelector("#copy-payment-card");
+    const copyStatus = document.querySelector("#copy-payment-status");
 
-      try {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText("6037697629387157");
-        } else {
-          const field = document.createElement("textarea");
-          field.value = "6037697629387157";
-          field.style.position = "fixed";
-          field.style.opacity = "0";
-          document.body.appendChild(field);
-          field.select();
+    let timerInterval = null;
+    let expired = false;
 
-          const copied = document.execCommand("copy");
-          field.remove();
+    function expirePaymentLink() {
+      if (expired) return;
+      expired = true;
 
-          if (!copied) throw new Error("copy failed");
+      if (timerInterval !== null) {
+        window.clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      timerBox.classList.add("expired");
+      timerBox.innerHTML =
+        'زمان پرداخت تمام شد<strong dir="ltr">00:00</strong>';
+
+      if (totalBox) totalBox.remove();
+      if (bankCard) bankCard.remove();
+      if (copyButton) copyButton.remove();
+      if (copyStatus) copyStatus.remove();
+
+      const notice = content.querySelector(".notice");
+      if (notice) notice.remove();
+
+      const expiredMessage = document.createElement("p");
+      expiredMessage.className = "expired-message";
+      expiredMessage.textContent =
+        "لینک پرداخت منقضی شده است. برای دریافت لینک جدید، از طریق تیکت دیسکورد با پشتیبانی تماس بگیر.";
+
+      content.appendChild(expiredMessage);
+    }
+
+    function updatePaymentCountdown() {
+      const remaining = Math.max(
+        0,
+        Math.ceil((expiryTime - Date.now()) / 1000)
+      );
+
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+
+      if (countdown) {
+        countdown.textContent =
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+
+      if (remaining <= 0) {
+        expirePaymentLink();
+      }
+    }
+
+    updatePaymentCountdown();
+
+    if (Date.now() < expiryTime) {
+      timerInterval = window.setInterval(
+        updatePaymentCountdown,
+        1000
+      );
+    }
+
+    if (copyButton) {
+      copyButton.addEventListener("click", async () => {
+        if (Date.now() >= expiryTime) {
+          expirePaymentLink();
+          return;
         }
 
-        status.textContent = "شماره کارت کپی شد ✓";
-      } catch {
-        status.textContent = "کپی نشد؛ شماره کارت را دستی انتخاب کن.";
-      }
-    });
+        const status = document.querySelector("#copy-payment-status");
+
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText("6037697629387157");
+          } else {
+            const field = document.createElement("textarea");
+            field.value = "6037697629387157";
+            field.style.position = "fixed";
+            field.style.opacity = "0";
+
+            document.body.appendChild(field);
+            field.select();
+
+            const copied = document.execCommand("copy");
+            field.remove();
+
+            if (!copied) throw new Error("copy failed");
+          }
+
+          if (status) status.textContent = "شماره کارت کپی شد ✓";
+        } catch {
+          if (status) {
+            status.textContent =
+              "کپی نشد؛ شماره کارت را دستی انتخاب کن.";
+          }
+        }
+      });
+    }
   } catch (error) {
     loading.textContent = "";
+
     content.innerHTML = `
       <p class="error-message">${escapeHTML(error.message)}</p>
       <p class="section-description">
@@ -295,7 +482,9 @@ async function loadPaymentPage() {
 }
 
 function getItemPrice(item) {
-  return Number(item.price_toman ?? item.price ?? item.amount_toman ?? 0);
+  return Number(
+    item.price_toman ?? item.price ?? item.amount_toman ?? 0
+  );
 }
 
 function getItemName(item) {
@@ -307,10 +496,12 @@ function getItemId(item, index) {
 }
 
 function isAvailable(item) {
-  return item.available !== false &&
+  return (
+    item.available !== false &&
     item.in_stock !== false &&
     item.stock !== 0 &&
-    item.enabled !== false;
+    item.enabled !== false
+  );
 }
 
 function updateTotal() {
@@ -322,27 +513,35 @@ function updateTotal() {
   });
 
   const totalElement = $("#cart-total");
-  if (totalElement) totalElement.textContent = formatToman(total);
+  if (totalElement) {
+    totalElement.textContent = formatToman(total);
+  }
 
   const countElement = $("#cart-count");
+
   if (countElement) {
     let count = 0;
+
     state.quantities.forEach((quantity) => {
       count += quantity;
     });
+
     countElement.textContent = count.toLocaleString("fa-IR");
   }
 }
 
 function renderItems() {
   const container =
-    $("#items-list") || $("#products-list") || $("#products");
+    $("#items-list") ||
+    $("#products-list") ||
+    $("#products");
 
   if (!container) return;
 
   if (!state.items.length) {
     container.innerHTML =
       '<p class="empty-state">فعلاً محصولی برای نمایش وجود ندارد.</p>';
+
     updateTotal();
     return;
   }
@@ -357,21 +556,33 @@ function renderItems() {
     return `
       <article class="product-card">
         <h3>${escapeHTML(name)}</h3>
-        <p class="product-price">${formatToman(price)}</p>
+
+        <p class="product-price">
+          ${formatToman(price)}
+        </p>
+
         ${
           available
-            ? `<div class="quantity-controls">
-                <button type="button"
+            ? `
+              <div class="quantity-controls">
+                <button
+                  type="button"
                   data-action="increase"
                   data-id="${escapeHTML(id)}"
-                  aria-label="افزایش تعداد">+</button>
+                  aria-label="افزایش تعداد"
+                >+</button>
+
                 <span>${quantity.toLocaleString("fa-IR")}</span>
-                <button type="button"
+
+                <button
+                  type="button"
                   data-action="decrease"
                   data-id="${escapeHTML(id)}"
                   aria-label="کاهش تعداد"
-                  ${quantity <= 0 ? "disabled" : ""}>−</button>
-              </div>`
+                  ${quantity <= 0 ? "disabled" : ""}
+                >−</button>
+              </div>
+            `
             : '<p class="out-of-stock">ناموجود</p>'
         }
       </article>
@@ -383,10 +594,14 @@ function renderItems() {
 
 async function loadItems() {
   const container =
-    $("#items-list") || $("#products-list") || $("#products");
+    $("#items-list") ||
+    $("#products-list") ||
+    $("#products");
 
   try {
-    if (container) container.setAttribute("aria-busy", "true");
+    if (container) {
+      container.setAttribute("aria-busy", "true");
+    }
 
     const response = await fetch(API_URL, {
       method: "GET",
@@ -403,8 +618,8 @@ async function loadItems() {
     state.items = Array.isArray(data)
       ? data
       : Array.isArray(data.items)
-      ? data.items
-      : [];
+        ? data.items
+        : [];
 
     renderItems();
   } catch (error) {
@@ -415,7 +630,9 @@ async function loadItems() {
         '<p class="error-message">دریافت محصولات ناموفق بود. لطفاً دوباره تلاش کن.</p>';
     }
   } finally {
-    if (container) container.removeAttribute("aria-busy");
+    if (container) {
+      container.removeAttribute("aria-busy");
+    }
   }
 }
 
@@ -439,7 +656,15 @@ document.addEventListener("click", (event) => {
 
   if (action === "increase") {
     const stock = Number(item.stock);
-    if (Number.isFinite(stock) && stock > 0 && current >= stock) return;
+
+    if (
+      Number.isFinite(stock) &&
+      stock > 0 &&
+      current >= stock
+    ) {
+      return;
+    }
+
     state.quantities.set(id, current + 1);
   }
 
@@ -452,5 +677,8 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const isPaymentPage = await loadPaymentPage();
-  if (!isPaymentPage) loadItems();
+
+  if (!isPaymentPage) {
+    loadItems();
+  }
 });
